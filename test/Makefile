@@ -4,9 +4,22 @@
 # defaults
 SIM ?= icarus
 FST ?= -fst # Use more efficient FST format
-TOPLEVEL_LANG ?= verilog
+TOPLEVEL_LANG ?= SystemVerilog
 SRC_DIR = $(PWD)/../src
-PROJECT_SOURCES = project.v
+PROJECT_SOURCES = dma_pkg.sv \
+as_rm_if.sv \
+	csr_interfaces.sv \
+	rm_df_if.sv \
+	rm_to_irq_if.sv \
+	fifo.sv \
+	spi_csr.sv \
+	IRQ.sv \
+	descriptor_fetcher.sv \
+	data_mover.sv \
+	ring_manager.sv \
+	movement_top.sv \
+	dma_top.sv \
+	project.sv
 
 ifneq ($(GATES),yes)
 
