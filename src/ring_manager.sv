@@ -57,7 +57,7 @@ module ring_manager #(
         if (csr_rm.error_clear) int_status_error_next = 1'b0;
     end
 
-    always_ff @(posedge csr_rm.clk) begin
+    always_ff @(posedge csr_rm.clk or negedge csr_rm.rst_n) begin
         if (!csr_rm.rst_n || csr_rm.reset) begin
             csr_rm.head      <= '0;
             inflight         <= 1'b0;

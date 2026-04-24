@@ -20,9 +20,12 @@ module fifo #(
     logic [FIFO_ADDR_WIDTH-1:0] rd_addr, rd_addr_t;
     logic full_t, empty_t;
 
-    always_ff @(posedge wr_clk) 
+    always_ff @(posedge wr_clk, posedge reset)
     begin : p_write_buffer
-        if ( (wr_en == 1'b1) && (full_t == 1'b0) ) begin
+        if ( reset == 1'b1 ) begin
+            for (int i = 0; i < FIFO_BUFFER_SIZE; i++)
+                fifo_buf[i] <= '0;
+        end else if ( (wr_en == 1'b1) && (full_t == 1'b0) ) begin
             fifo_buf[$unsigned(wr_addr[FIFO_ADDR_WIDTH-2:0])] <= din;
         end
     end
@@ -35,9 +38,12 @@ module fifo #(
             wr_addr <= wr_addr_t;
     end
 
-    always_ff @(posedge rd_clk) 
+    always_ff @(posedge rd_clk, posedge reset)
     begin : p_rd_buffer
-        dout <= fifo_buf[$unsigned(rd_addr_t[FIFO_ADDR_WIDTH-2:0])];
+        if ( reset == 1'b1 )
+            dout <= '0;
+        else
+            dout <= fifo_buf[$unsigned(rd_addr_t[FIFO_ADDR_WIDTH-2:0])];
     end
 
     always_ff @(posedge rd_clk, posedge reset) 
@@ -61,6 +67,13 @@ module fifo #(
     assign empty_t = (wr_addr == rd_addr) ? 1'b1 : 1'b0;
     assign full_t = (wr_addr[FIFO_ADDR_WIDTH-2:0] == rd_addr[FIFO_ADDR_WIDTH-2:0]) &&
                     (wr_addr[FIFO_ADDR_WIDTH-1] != rd_addr[FIFO_ADDR_WIDTH-1]) ? 1'b1 : 1'b0;
-    assign full = full_t;
+    always_ff @(posedge wr_clk, posedge reset)
+    begin : p_full
+        if ( reset == 1'b1 )
+            full <= 1'b0;
+        else
+            full <= (wr_addr_t[FIFO_ADDR_WIDTH-2:0] == rd_addr[FIFO_ADDR_WIDTH-2:0]) &&
+                    (wr_addr_t[FIFO_ADDR_WIDTH-1]   != rd_addr[FIFO_ADDR_WIDTH-1]);
+    end
 
 endmodule
