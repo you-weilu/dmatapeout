@@ -42,6 +42,8 @@ VERILOG_SOURCES += $(PWD)/gate_level_netlist.v
 
 endif
 
+COMPILE_ARGS		+= -g2012
+
 # Allow sharing configuration between design and testbench via `include`:
 COMPILE_ARGS 		+= -I$(SRC_DIR)
 
