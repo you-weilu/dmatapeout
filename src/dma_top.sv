@@ -1,6 +1,5 @@
 // DMA top-level: SPI-CSR + Ring Manager + Movement Top + IRQ.
-// External interface: SPI (4 pins) + probe outputs for TinyTapeout validation.
-// AXI4 master removed; movement_top uses an internal memory stub.
+// External interface: SPI (4 pins) + single IRQ output + probe pins.
 
 module dma_top #(
     parameter int MAX_INFLIGHT = dma_pkg::MAX_INFLIGHT
