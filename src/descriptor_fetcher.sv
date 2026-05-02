@@ -28,11 +28,15 @@ module descriptor_fetcher #(
     input  logic                    dm_in_full,
     output logic [DESC_WIDTH-1:0]   dm_in_din,
 
-    rm_df_if.df rm_df
+    // Ring Manager → Descriptor Fetcher handshake (flattened from rm_df_if)
+    input  logic [ADDR_WIDTH-1:0] rm_df_addr,
+    input  logic                  fetch_req_valid,
+    output logic                  fetch_req_ready,
+    output logic                  df_error
 );
 
-    assign rm_df.fetch_req_ready = ~df_in_full;
-    assign rm_df.df_error        = 1'b0;  // no error sources without SRAM
+    assign fetch_req_ready = ~df_in_full;
+    assign df_error        = 1'b0;  // no error sources without SRAM
 
     // Registered outputs (cut combinational paths)
     logic                    df_in_wr_en_r,  df_in_wr_en_c;
@@ -67,9 +71,9 @@ module descriptor_fetcher #(
         df_out_rd_en  = 1'b0;
 
         // Forward ring manager address to AXI as fetch handle
-        if (!df_in_full && rm_df.fetch_req_valid) begin
+        if (!df_in_full && fetch_req_valid) begin
             df_in_wr_en_c                        = 1'b1;
-            df_in_din_c[ADDR_WIDTH-1:0]          = rm_df.rm_df_addr;
+            df_in_din_c[ADDR_WIDTH-1:0]          = rm_df_addr;
             df_in_din_c[HANDLE_WIDTH-1:ADDR_WIDTH] = LEN_WIDTH'(DESC_WORDS);
         end
 

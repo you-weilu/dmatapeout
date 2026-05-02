@@ -34,15 +34,6 @@ module movement_top #(
     wire reset = ~rst_n;
 
     // -------------------------------------------------------------------------
-    // rm_df_if wiring
-    // -------------------------------------------------------------------------
-    rm_df_if rm_df ();
-    assign rm_df.rm_df_addr      = rm_df_addr;
-    assign rm_df.fetch_req_valid = rm_df_valid;
-    assign df_ready               = rm_df.fetch_req_ready;
-    assign df_error               = rm_df.df_error;
-
-    // -------------------------------------------------------------------------
     // Descriptor Fetcher <-> stub (df_in: handle, df_out: descriptor payload)
     // -------------------------------------------------------------------------
     logic                    df_in_wr_en;
@@ -80,18 +71,21 @@ module movement_top #(
         .INSTR_WIDTH (INSTR_WIDTH),
         .DESC_WIDTH  (DESC_WIDTH)
     ) u_df (
-        .clock        (clk),
-        .reset        (reset),
-        .df_in_wr_en  (df_in_wr_en),
-        .df_in_full   (df_in_full),
-        .df_in_din    (df_in_din),
-        .df_out_rd_en (df_out_rd_en),
-        .df_out_empty (df_out_empty),
-        .df_out_dout  (df_out_dout),
-        .dm_in_wr_en  (dm_in_wr_en),
-        .dm_in_full   (dm_in_full),
-        .dm_in_din    (dm_in_din),
-        .rm_df        (rm_df)
+        .clock           (clk),
+        .reset           (reset),
+        .df_in_wr_en     (df_in_wr_en),
+        .df_in_full      (df_in_full),
+        .df_in_din       (df_in_din),
+        .df_out_rd_en    (df_out_rd_en),
+        .df_out_empty    (df_out_empty),
+        .df_out_dout     (df_out_dout),
+        .dm_in_wr_en     (dm_in_wr_en),
+        .dm_in_full      (dm_in_full),
+        .dm_in_din       (dm_in_din),
+        .rm_df_addr      (rm_df_addr),
+        .fetch_req_valid (rm_df_valid),
+        .fetch_req_ready (df_ready),
+        .df_error        (df_error)
     );
 
     // -------------------------------------------------------------------------

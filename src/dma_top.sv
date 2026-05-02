@@ -17,19 +17,31 @@ module dma_top #(
     output logic irq,
 
     // Probe outputs (map directly to TinyTapeout uo_out / uio pins)
-    output logic       probe_fetch_req_valid,  // ring manager firing a fetch
-    output logic       probe_df_in_wr_en,      // descriptor fetcher wrote a handle
-    output logic       probe_dm_wr_en,         // data mover produced an instruction
-    output logic       probe_dm_instr_rw,      // direction bit (0=read, 1=write)
-    output logic       probe_ring_empty,       // ring manager: head == tail
-    output logic       probe_busy,             // ring manager: descriptor in-flight
-    output logic [7:0] probe_rm_df_addr_lo     // lower byte of descriptor address
+    output logic       probe_fetch_req_valid,
+    output logic       probe_df_in_wr_en,
+    output logic       probe_dm_wr_en,
+    output logic       probe_dm_instr_rw,
+    output logic       probe_ring_empty,
+    output logic       probe_busy,
+    output logic [7:0] probe_rm_df_addr_lo
 );
 
-    csr_ring_manager_if ring_mgr (.clk(clk), .rst_n(rst_n));
+    // CSR <-> Ring Manager wires (flattened from csr_ring_manager_if)
+    logic [dma_pkg::ADDR_WIDTH-1:0] csr_baseaddr;
+    logic [7:0] csr_ringlen;
+    logic [7:0] csr_tail;
+    logic       csr_enable;
+    logic       csr_reset;
+    logic       csr_irq_en;
+    logic       csr_error_clear;
+    logic [7:0] csr_head;
+    logic       csr_busy;
+    logic       csr_ring_empty;
+    logic       csr_irq_empty_set;
+    logic       csr_error_set;
 
     logic rst_core_n;
-    assign rst_core_n = rst_n & ~ring_mgr.reset;
+    assign rst_core_n = rst_n & ~csr_reset;
 
     logic irq_clr_pe0, irq_clr_pe1;
 
@@ -40,7 +52,18 @@ module dma_top #(
         .mosi                 (spi_mosi),
         .miso                 (spi_miso),
         .csn                  (spi_csn),
-        .ring_mgr             (ring_mgr),
+        .baseaddr             (csr_baseaddr),
+        .ringlen              (csr_ringlen),
+        .tail                 (csr_tail),
+        .enable               (csr_enable),
+        .reset                (csr_reset),
+        .irq_en               (csr_irq_en),
+        .error_clear          (csr_error_clear),
+        .head                 (csr_head),
+        .busy                 (csr_busy),
+        .ring_empty           (csr_ring_empty),
+        .irq_empty_set        (csr_irq_empty_set),
+        .error_set            (csr_error_set),
         .irq_clear_pulse_empty(irq_clr_pe0),
         .irq_clear_pulse_error(irq_clr_pe1)
     );
@@ -54,22 +77,35 @@ module dma_top #(
     ring_manager #(
         .MAX_INFLIGHT(MAX_INFLIGHT)
     ) u_ring_manager (
-        .csr_rm          (ring_mgr),
-        .rm_df_addr      (rm_df_addr),
-        .fetch_req_valid (fetch_req_valid),
-        .fetch_req_ready (fetch_req_ready),
-        .df_error        (df_error),
-        .as_done         (dm_done),
-        .irq_empty       (),
-        .irq_error       ()
+        .clk           (clk),
+        .rst_n         (rst_n),
+        .baseaddr      (csr_baseaddr),
+        .ringlen       (csr_ringlen),
+        .tail          (csr_tail),
+        .enable        (csr_enable),
+        .reset         (csr_reset),
+        .irq_en        (csr_irq_en),
+        .error_clear   (csr_error_clear),
+        .head          (csr_head),
+        .busy          (csr_busy),
+        .ring_empty    (csr_ring_empty),
+        .irq_empty_set (csr_irq_empty_set),
+        .error_set     (csr_error_set),
+        .rm_df_addr    (rm_df_addr),
+        .fetch_req_valid(fetch_req_valid),
+        .fetch_req_ready(fetch_req_ready),
+        .df_error      (df_error),
+        .as_done       (dm_done),
+        .irq_empty     (),
+        .irq_error     ()
     );
 
     IRQ u_irq (
         .clk        (clk),
         .rst_n      (rst_n),
-        .empty_event(ring_mgr.irq_empty_set),
-        .error_event(ring_mgr.error_set),
-        .irq_en     (ring_mgr.irq_en),
+        .empty_event(csr_irq_empty_set),
+        .error_event(csr_error_set),
+        .irq_en     (csr_irq_en),
         .irq_clear  ({irq_clr_pe1, irq_clr_pe0}),
         .irq_status (),
         .irq        (irq)
@@ -89,8 +125,8 @@ module dma_top #(
     );
 
     assign probe_fetch_req_valid = fetch_req_valid;
-    assign probe_ring_empty      = ring_mgr.ring_empty;
-    assign probe_busy            = ring_mgr.busy;
+    assign probe_ring_empty      = csr_ring_empty;
+    assign probe_busy            = csr_busy;
     assign probe_rm_df_addr_lo   = rm_df_addr[7:0];
 
 endmodule

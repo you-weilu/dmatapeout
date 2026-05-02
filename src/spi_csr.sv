@@ -22,8 +22,19 @@ module spi_csr (
     output logic miso,
     input  logic csn,
 
-    // Ring manager interface
-    csr_ring_manager_if.csr ring_mgr,
+    // Ring manager interface (flattened from csr_ring_manager_if)
+    output logic [dma_pkg::ADDR_WIDTH-1:0] baseaddr,
+    output logic [7:0] ringlen,
+    output logic [7:0] tail,
+    output logic       enable,
+    output logic       reset,
+    output logic       irq_en,
+    output logic       error_clear,
+    input  logic [7:0] head,
+    input  logic       busy,
+    input  logic       ring_empty,
+    input  logic       irq_empty_set,
+    input  logic       error_set,
 
     // One-cycle clear pulses consumed by IRQ.sv
     output logic irq_clear_pulse_empty,
@@ -81,10 +92,10 @@ module spi_csr (
             dma_pkg::REG_RINGLEN:     rd_data = reg_ringlen;
             dma_pkg::REG_TAIL:        rd_data = reg_tail;
             dma_pkg::REG_CTRL:        rd_data = {5'd0, reg_ctrl[2:0]};
-            dma_pkg::REG_HEAD:        rd_data = ring_mgr.head;
+            dma_pkg::REG_HEAD:        rd_data = head;
             dma_pkg::REG_STATUS:      rd_data = {5'd0, reg_status_error,
-                                                       ring_mgr.ring_empty,
-                                                       ring_mgr.busy};
+                                                       ring_empty,
+                                                       busy};
             dma_pkg::REG_IRQ:         rd_data = {6'd0, reg_irq_error, reg_irq_empty};
             default:                  rd_data = 8'hFF;
         endcase
@@ -147,8 +158,8 @@ module spi_csr (
             reg_status_error <= '0;
         end else begin
             // HW events (set sticky bits)
-            if (ring_mgr.irq_empty_set) reg_irq_empty   <= 1'b1;
-            if (ring_mgr.error_set) begin
+            if (irq_empty_set) reg_irq_empty   <= 1'b1;
+            if (error_set) begin
                 reg_irq_error    <= 1'b1;
                 reg_status_error <= 1'b1;
             end
@@ -189,12 +200,12 @@ module spi_csr (
     // -------------------------------------------------------------------------
     // Ring manager outputs
     // -------------------------------------------------------------------------
-    assign ring_mgr.baseaddr    = {reg_baseaddr_hi, reg_baseaddr_lo};
-    assign ring_mgr.ringlen     = reg_ringlen;
-    assign ring_mgr.tail        = reg_tail;
-    assign ring_mgr.enable      = reg_ctrl[0];
-    assign ring_mgr.reset       = reg_ctrl[1];
-    assign ring_mgr.irq_en      = reg_ctrl[2];
-    assign ring_mgr.error_clear = write_irq && rx_data[1];
+    assign baseaddr    = {reg_baseaddr_hi, reg_baseaddr_lo};
+    assign ringlen     = reg_ringlen;
+    assign tail        = reg_tail;
+    assign enable      = reg_ctrl[0];
+    assign reset       = reg_ctrl[1];
+    assign irq_en      = reg_ctrl[2];
+    assign error_clear = write_irq && rx_data[1];
 
 endmodule
