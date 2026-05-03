@@ -7,10 +7,6 @@ FST ?= -fst # Use more efficient FST format
 TOPLEVEL_LANG ?= SystemVerilog
 SRC_DIR = $(PWD)/../src
 PROJECT_SOURCES = dma_pkg.sv \
-as_rm_if.sv \
-	csr_interfaces.sv \
-	rm_df_if.sv \
-	rm_to_irq_if.sv \
 	fifo.sv \
 	spi_csr.sv \
 	IRQ.sv \

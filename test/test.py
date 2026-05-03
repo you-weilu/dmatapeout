@@ -8,10 +8,8 @@ from cocotb.triggers import ClockCycles
 
 @cocotb.test()
 async def test_project(dut):
-    cocotb.pass_test()
     dut._log.info("Start")
 
-    # Set the clock period to 10 us (100 KHz)
     clock = Clock(dut.clk, 10, unit="us")
     cocotb.start_soon(clock.start())
 
@@ -24,18 +22,14 @@ async def test_project(dut):
     await ClockCycles(dut.clk, 10)
     dut.rst_n.value = 1
 
-    dut._log.info("Test project behavior")
+    # SPI_CSN = ui_in[2] = 1 (inactive), all others 0
+    dut.ui_in.value = 0b00000100
+    dut.uio_in.value = 0
+    await ClockCycles(dut.clk, 2)
 
-    # Set the input values you want to test
-    dut.ui_in.value = 20
-    dut.uio_in.value = 30
+    dut._log.info("Check idle state after reset")
 
-    # Wait for one clock cycle to see the output values
-    await ClockCycles(dut.clk, 1)
-
-    # The following assersion is just an example of how to check the output values.
-    # Change it to match the actual expected output of your module:
-    assert dut.uo_out.value == 50
-
-    # Keep testing the module by changing the input values, waiting for
-    # one or more clock cycles, and asserting the expected output values.
+    # In idle: DMA disabled, head=tail=0 so probe_ring_empty (uo_out[6]) = 1,
+    # all other outputs (IRQ, SPI MISO, probes) = 0  =>  uo_out = 0b01000000 = 64
+    assert dut.uo_out.value == 0b01000000, \
+        f"Expected uo_out=0b01000000 in idle state, got {dut.uo_out.value:#010b}"
